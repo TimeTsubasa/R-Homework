@@ -1,0 +1,97 @@
+---
+title: "HW4"
+author: "Yating Liao (7636428840)"
+date: "2023-02-21"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r }
+library(readr)
+cities1 <- read_csv("cities1.csv")
+library(cluster)
+library(ggplot2)
+library(factoextra)
+str(cities1)
+
+#Q1 Find the number of K
+# delete two columns 
+drop <- c("Metropolitan_Area","Crime_Trend","Unemployment_Threat")
+df_new = cities1[,!(names(cities1) %in% drop)]
+df_new
+# scale dataframe
+df1 <-scale(df_new)
+head(df1)
+distance = dist(df1)
+head(distance)
+# TWCV Values for k+1  to K = 15
+set.seed(123)
+k <-1:15
+twcv = function(k) 
+kmeans(df1,centers = k,nstart = 10)$tot.withinss
+#plot twcv for k = 1 to k = 10
+twcv_values <- sapply(k,twcv)
+head(twcv_values)
+# Elbow chart
+par(mar = c(1, 1, 1, 1)) # Reset the margins
+plot(k,twcv_values,type ="b",pch = 19,
+     xlab = "Number of Clusters K",ylab = "TWCV")
+grid() # K = 4. The best value of k is 4. 
+
+#Q2 Hierarchical Clustering
+h1 = hclust(distance, method ='ward.D')
+str(h1)
+# Dendrogram - Ward
+#
+plot(h1,cex=0.4,xlab="",sub="",ylab="")
+par(cex=0.4, mar=c(5, 8, 4, 8))
+plot(as.dendrogram(h1),horiz=T)
+# CUT the dendrograms to 4 clusters
+cut1 = cutree(h1,k=4)
+head(cut1)
+df2 = data.frame(df1,cluster = cut1)
+head(df2)
+fviz_dend(h1,k=4,cex = 0.5, main="Ward linkage",
+          k_colors = "jco", rect = T, rect_fill = T)
+
+# scatterplot - Ward linkage
+fviz_cluster(list(data = df, cluster = cut1),main="Ward linkage",
+             palette = "Set2",show.clust.cent = F, labelsize = 10,
+             repel = T, # Avoid label overplotting (slow) 
+             ggtheme = theme_minimal()
+              )
+
+# cut dendrogram with average linkage
+h2 = hclust(distance, method ='average')
+cut2 = cutree(h2,k=4)
+table(cut2)
+#
+# dendrogram - average linkage
+#
+fviz_dend(h2,k=4,cex = 0.5,main="average linkage",
+          k_colors = "jco", rect = T, rect_fill = T)
+#
+# scatterplot - average linkage
+#
+fviz_cluster(list(data = df, cluster = cut2),main="average linkage",
+             palette = "Set2",show.clust.cent = F, labelsize = 10,
+             repel = T, # Avoid label overlap (slow) 
+             ggtheme = theme_minimal() 
+              )
+```
+
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

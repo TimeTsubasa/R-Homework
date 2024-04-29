@@ -1,0 +1,159 @@
+---
+title: "Test for equality of k proportions"
+author: "Ho: p1 = p2 = p3"
+geometry: "left=2cm,right=2cm,top=2cm,bottom=2cm"
+output: 
+   pdf_document:
+     includes:
+     fig_width: 5.25
+     fig_height: 4.75
+---
+
+```{r }
+#
+# kpop.r
+#
+headlines = c('A','B','C')
+clicks = c(405,380,490)
+visits = c(900,950,1000)
+d0 = rbind(clicks, visits)
+d0 = data.frame(d0)
+names(d0) = headlines
+d0
+#
+# sample proportions
+#
+clicks/visits
+#
+# Even though sample proportions are not equal,
+# Can we conclude that population proportions are equal? 
+# Ho: pA = pB = pC
+#
+# lets create
+# Tables of observed and expected frequencies
+#
+# observed frequencies
+#
+noclicks = visits - clicks
+noclicks
+observed = data.frame(rbind(clicks,noclicks))
+names(observed) = headlines
+observed
+#
+# expected freqs
+#
+pooled = sum(clicks)/sum(observed)
+pooled
+expected_clicks = pooled*(visits)
+expected_noclicks = (1-pooled)*(visits)
+expected = data.frame(rbind(expected_clicks,expected_noclicks))
+names(expected) = headlines
+expected
+# 
+# Chi-square test -manually
+# 
+# TS is chisquare
+#
+chisquare = 0
+for(i in 1:2)
+{
+  for(j in 1:3)
+  {
+    value = ((observed[i,j]-expected[i,j])^2)/expected[i,j]
+    chisquare = chisquare + value
+  }
+}
+chisquare
+#
+# p-value
+pvalue = 1-pchisq(chisquare,2)
+pvalue
+#
+# pvalue < alpha, reject Ho
+# conclude Ha: not all headline click-rates are equal
+#
+# Chi-square test -using R function
+#
+prop.test(clicks,visits)
+#
+# To find best headline use CIs
+# 
+# CIs on 3 population proportions
+#
+d0
+#
+# to get CIs and plot them
+#
+binom.test(405,900)
+test = binom.test(405,900)
+test
+test$estimate
+test$conf.int
+#
+# do it for all
+#
+means = NULL
+lls = NULL
+uls = NULL
+#
+test = binom.test(405,900)
+means = c(means,test$estimate)
+int = test$conf.int
+lls = c(lls,int[1])
+uls = c(uls,int[2])
+
+test = binom.test(380,950)
+means = c(means,test$estimate)
+int = test$conf.int
+lls = c(lls,int[1])
+uls = c(uls,int[2])
+
+test = binom.test(490,1000)
+means = c(means,test$estimate)
+int = test$conf.int
+lls = c(lls,int[1])
+uls = c(uls,int[2])
+#
+k = 1:3
+d=data.frame(k,headlines,means,lls,uls)
+d
+#
+# plot CIs
+#
+plot(uls~k,d,
+     xlim=c(0.5,3.5),ylim=c(0.3,0.6),type="n",
+     xaxt = "n",ylab="",xlab='headlines')
+grid()
+axis(1,at=k,labels = d$headlines)
+arrows(k,lls,k,uls,code = 3,angle = 90,length = 0.05)
+points(k,means,pch=19,cex=0.7)
+#
+# Conclusion: 
+# headlines B and C have different population proportions, their CIs do not overlap
+# not clear if headline A proportion is better than headline B since their CIs overlap
+#
+# Suppose that the sample proportions are the same, but they come from 10x larger samples
+#
+clicks = 10*clicks
+visits = 10*visits
+d0 = rbind(clicks, visits)
+d0 = data.frame(d0)
+names(d0) = headlines
+d0
+test <- function(x,n){binom.test(x,n)}
+out = mapply(test,clicks,visits)
+#
+# collect all CIS lower and upper limits
+for(i in 1:3) lls[i] = out[4,i]$conf.int[1]
+for(i in 1:3) uls[i] = out[4,i]$conf.int[2]
+d=data.frame(k,headlines,means,lls,uls)
+d
+#
+plot(uls~k,d,xlim=c(0.5,3.5),ylim=c(0.35,0.55),type="n",xaxt = "n",ylab="",xlab='headlines')
+grid()
+axis(1,at=k,labels = d$headlines)
+arrows(k,lls,k,uls,code = 3,angle = 90,length = 0.05)
+points(k,means,pch=19,cex=0.7)
+#
+
+```

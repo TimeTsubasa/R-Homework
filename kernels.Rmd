@@ -1,0 +1,88 @@
+---
+title: "KDE"
+output: pdf_document
+---
+
+```{r}
+# kernels.r
+
+library(MASS)
+str(geyser)
+head(geyser)
+duration = geyser$duration
+waiting = geyser$waiting
+#library(vcd)
+#
+# histogram shape varies with number of bins or breaks
+#
+par(mfrow=c(2, 2))               # two rows two columns
+hist(duration,breaks = 3,freq = F,ylim = c(0, 1),col="lightgrey",main="")
+hist(duration,breaks = 6,freq = F,ylim = c(0, 1),col="lightgrey",main="")
+hist(duration,breaks = 9,freq = F,ylim = c(0, 1),col="lightgrey",main="")
+hist(duration,breaks = 12,freq = F,ylim = c(0, 1),col="lightgrey",main="")
+par(mfrow=c(1,1))
+#
+# KDE
+#
+h = 0.3
+#
+# 10 points as data values
+#
+xi = c(2.1, 2.2, 2.3, 2.4, 2.6, 2.7, 3.2, 3.3, 3.6, 3.7)
+n  = length(xi)
+n
+# 
+# create a set of equally spaced m points on the x-axis
+m = 28
+x = seq(from = min(xi) - 1, to = max(xi) + 1, len = m)
+x
+#
+# kernel function
+gauss = function(x){1/sqrt(2*pi)*exp(-(x^2)/2)}
+#
+# Apply kernel function to each xi-value, creating
+# a matrix (each column with y-values of a bump)
+shapes = sapply(xi, function(xi){(1/(h*n))*gauss((x - xi)/h)} )
+round(shapes,3)
+#
+# plot shapes and KDE
+#
+plot(1,type="n",xlab="",ylab="",xlim=c(1,5), ylim=c(0,0.7))
+for (i in 1:n) lines(x,shapes[,i],pch=19,type="l",col="red")
+rug(xi,lwd=2,col="red")
+grid()
+# add KDE
+lines(x, apply(shapes, 1, sum), type = "l", ylab = "", lwd = 2)
+#
+# now with density R function
+#
+lines(density(xi,width=1.2,n=28),col="red")
+#
+# erase bumps
+#
+for (i in 1:n) lines(x,shapes[,i],pch=19,type="l",col="white")
+#
+# Use R density function alone
+#
+plot(density(xi,width=1.2,n=28),col="red",lwd=2,main="",xlab="",ylab="",xlim=c(1,5),ylim=c(0,0.7))
+grid()
+#
+# Example 2
+#
+# histogram with KDE 
+#
+library(MASS)
+str(geyser)
+waiting = geyser$waiting
+hist(waiting, freq = F,col="grey95", main="")
+lines(density(waiting), col="red", lwd=2)
+#
+# KDE alone
+#
+plot(density(waiting), col="red",lwd=2, bty='l',
+     xlab="",main="",xlim=c(40,110),ylim=c(0,0.04))
+grid()
+#
+
+```
+

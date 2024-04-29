@@ -1,0 +1,158 @@
+---
+title: "K-means"
+author: "USArrests dataset"
+output: pdf_document
+---
+
+```{r, warning = F, message=F}
+# usarrests.r
+
+library(cluster)       # silohuette()
+library(factoextra)    # get_dist()
+#
+df0 <- USArrests
+str(df0)
+head(df0)
+#
+# scale dataframe (always for distance-based(centroids-based) methods)
+#
+df <- scale(df0)
+class(df)
+head(df)
+#
+# find distances
+#
+distance = dist(df)
+head(distance)
+length(distance)
+# 
+df0[c("Vermont","Nevada"),]
+#
+# distance in a matrix display
+#
+distmat = as.matrix(distance)
+dim(distmat)
+distmat[1:7,1:7]
+#
+# heatmat of distances
+#
+fviz_dist(distance,lab_size=8)
+#
+# K-means with 2 clusters
+#
+k2 = kmeans(df, centers = 2, nstart = 25)
+str(k2)
+k2
+#
+# Cluster plot
+#
+fviz_cluster(k2, data = df)
+#
+# K-means with k=3,4,5
+#
+k3 <- kmeans(df, centers = 3, nstart = 25)
+k4 <- kmeans(df, centers = 4, nstart = 25)
+k5 <- kmeans(df, centers = 5, nstart = 25)
+#
+p1 <- fviz_cluster(k2, geom = "point", data = df) + ggtitle("k = 2")
+p2 <- fviz_cluster(k3, geom = "point",  data = df) + ggtitle("k = 3")
+p3 <- fviz_cluster(k4, geom = "point",  data = df) + ggtitle("k = 4")
+p4 <- fviz_cluster(k5, geom = "point",  data = df) + ggtitle("k = 5")
+#
+library(gridExtra)
+grid.arrange(p1, p2, p3, p4, nrow = 2)
+#
+# collect TWCV from kmeans( )
+#
+set.seed(123)
+twcv = function(k) kmeans(df, k, nstart = 10 )$tot.withinss
+#
+# Plot twcv for k = 1 to k = 15
+#
+k <- 1:15
+twcv_values <- sapply(k,twcv)
+head(twcv_values)
+#
+plot(k, twcv_values,type="b",pch = 19, 
+     xlab="Number of clusters K",ylab="TWCV")
+grid()
+#
+# silhouette for k=2 clusters
+ss = silhouette(k2$cluster, distance)
+#
+# display silhouette values
+ss[1:9,]
+# convert silhouette data to a dataframe
+d2 = data.frame(ss[,1:3])
+head(d2)
+#
+ss = silhouette(k2$cluster, distance)
+plot(ss,main="")
+#
+# average silhouette coefficient for k=2 clusters
+#
+mean(d2[,3])
+#
+# average silhouette coeff for k=2 clusters is 0.4084 shown at bottom of plot
+#
+# silhouette for k=4 clusters
+#
+ss = silhouette(k4$cluster, distance)
+plot(ss,main="")
+#
+#
+# function to find the average silhouette for k clusters
+#
+avg_sil <- function(k) 
+{
+  km <- kmeans(df, centers = k, nstart = 25)
+  ss <- silhouette(km$cluster, distance)
+  mean(ss[,3])
+}
+#
+# find avg silhouette for 2-15 clusters
+#
+k <- 2:15
+avg_sil_values <- sapply(k, avg_sil)
+avg_sil_values
+#
+plot(k, avg_sil_values,type = "b", pch = 19, 
+     xlab = "Number of clusters K",
+     ylab = "Average Silhouette")
+grid()
+#
+# Average silohuette suggests using k = 2 clusters
+
+# I chose clustering with k = 4
+#
+set.seed(123)
+final <- kmeans(df,centers = 4,nstart = 25)
+final
+
+fviz_cluster(final,data = df)
+# add cluster number to dataframe
+#
+cluster_number = as.factor(final$cluster)
+df0$cluster = cluster_number
+head(df0)
+#
+# average unscaled measures by cluster
+#
+aggregate( .~ cluster,FUN=mean,data = df0)
+
+# biplot with clusters
+#
+m3 = prcomp(df, scale=T)
+fviz_pca_biplot(m3,labelsize = 2,col.var = "red",
+                habillage = cluster_number)
+#
+# Group (cluster) 4 has high rates on all crimes (slightly less in Murder)
+# Group (cluster) 1 has high murder rates
+# California, New York, Washington, New Jersey have high level of urbanization
+# Group (cluster) 2 has low rates on all crimes and urbanization
+# Group (cluster) 3 has low crime rates but some states with lots of urban population
+#
+
+```
+
+
